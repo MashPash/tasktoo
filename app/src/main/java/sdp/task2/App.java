@@ -6,17 +6,19 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 import org.w3c.dom.Element;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class App {
 
-    public List<String> parseXmlFile(String filePath, List<String> selectedFields) {
-        List<String> result = new ArrayList<>();
+    public JsonArray parseXmlFile(String filePath, List<String> selectedFields) {
+        JsonArray jsonArray = new JsonArray();
         try {
             File fXmlFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -29,40 +31,37 @@ public class App {
                 Node recordNode = recordList.item(i);
                 if (recordNode.getNodeType() == Node.ELEMENT_NODE) {
                     Element recordElement = (Element) recordNode;
+                    JsonObject jsonObject = new JsonObject();
 
-                    StringBuilder recordBuilder = new StringBuilder();
                     for (String field : selectedFields) {
                         NodeList fieldList = recordElement.getElementsByTagName(field);
                         if (fieldList.getLength() > 0) {
                             String fieldValue = fieldList.item(0).getTextContent();
-                            recordBuilder.append(field).append(": ").append(fieldValue).append(", ");
+                            jsonObject.addProperty(field, fieldValue);
                         }
                     }
-                    // Remove trailing comma and space
-                    if (recordBuilder.length() > 0) {
-                        recordBuilder.deleteCharAt(recordBuilder.length() - 2);
-                        result.add(recordBuilder.toString());
+                    if (jsonObject.size() > 0) {
+                        jsonArray.add(jsonObject);
                     }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return result;
+        return jsonArray;
     }
 
     public void parseXmlFileAndWriteToFile(String xmlFilePath, String outputFilePath, List<String> selectedFields) {
-        List<String> values = parseXmlFile(xmlFilePath, selectedFields);
+        JsonArray jsonArray = parseXmlFile(xmlFilePath, selectedFields);
         try (FileWriter writer = new FileWriter(outputFilePath)) {
-            for (String value : values) {
-                writer.write(value + System.lineSeparator());
-            }
+            Gson gson = new Gson();
+            gson.toJson(jsonArray, writer);
             System.out.println("Data successfully written to " + outputFilePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    
+
     public static void main(String[] args) {
         App app = new App();
         Scanner scanner = new Scanner(System.in);
@@ -72,7 +71,7 @@ public class App {
         List<String> selectedFields = List.of(fieldsInput.split("\\s*,\\s*"));
 
         String xmlFilePath = "src/main/resources/data.xml";
-        String outputFilePath = "src/main/resources/output.txt";
+        String outputFilePath = "src/main/resources/output.json";
         app.parseXmlFileAndWriteToFile(xmlFilePath, outputFilePath, selectedFields);
 
         scanner.close();
