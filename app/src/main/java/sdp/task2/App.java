@@ -1,14 +1,11 @@
 package sdp.task2;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Node;
-import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,46 +16,18 @@ public class App {
 
     public JsonArray parseXmlFile(String filePath, List<String> selectedFields) {
         JsonArray jsonArray = new JsonArray();
-        boolean fieldFoundOverall = false; // Flag to check if any field is found overall
-
         try {
             File fXmlFile = new File(filePath);
             if (!fXmlFile.exists()) {
                 System.err.println("File not found: " + filePath);
                 return jsonArray;
             }
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(fXmlFile);
-            doc.getDocumentElement().normalize();
+            XMLReader xmlReader = XMLReaderFactory.createXMLReader();
+            XmlHandler handler = new XmlHandler(selectedFields);
+            xmlReader.setContentHandler(handler);
+            xmlReader.parse(new InputSource(filePath));
 
-            NodeList recordList = doc.getElementsByTagName("record");
-            for (int i = 0; i < recordList.getLength(); i++) {
-                Node recordNode = recordList.item(i);
-                if (recordNode.getNodeType() == Node.ELEMENT_NODE) {
-                    Element recordElement = (Element) recordNode;
-                    JsonObject jsonObject = new JsonObject();
-
-                    boolean fieldFoundInRecord = false;
-                    for (String field : selectedFields) {
-                        NodeList fieldList = recordElement.getElementsByTagName(field);
-                        if (fieldList.getLength() > 0) {
-                            String fieldValue = fieldList.item(0).getTextContent();
-                            jsonObject.addProperty(field, fieldValue);
-                            fieldFoundInRecord = true;
-                            fieldFoundOverall = true;
-                        }
-                    }
-                    if (fieldFoundInRecord) {
-                        jsonArray.add(jsonObject);
-                    }
-                }
-            }
-
-            if (!fieldFoundOverall) {
-                System.err.println("None of the selected fields were found in the XML records.");
-            }
-
+            jsonArray = handler.getJsonArray();
         } catch (Exception e) {
             e.printStackTrace();
         }
