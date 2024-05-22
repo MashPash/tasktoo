@@ -44,3 +44,23 @@ tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
+
+task runApp(type: JavaExec) {
+    dependsOn 'build'
+
+    // Set the classpath to include the compiled classes
+    classpath = sourceSets.main.runtimeClasspath
+
+    // Set the main class
+    mainClass = 'sdp.task2.App'
+
+    // Specify the command line arguments
+    //args = []
+
+    // Add standard input for user input
+    standardInput = System.in
+
+}
+
+
+run.dependsOn runApp

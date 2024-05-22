@@ -7,13 +7,15 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 import org.w3c.dom.Element;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class App {
 
-    // Method to parse the XML file and return the values
-    public List<String> parseXmlFile(String filePath) {
+    public List<String> parseXmlFile(String filePath, List<String> selectedFields) {
         List<String> result = new ArrayList<>();
         try {
             File fXmlFile = new File(filePath);
@@ -22,23 +24,25 @@ public class App {
             Document doc = dBuilder.parse(fXmlFile);
             doc.getDocumentElement().normalize();
 
-            NodeList nList = doc.getElementsByTagName("record");
-            for (int temp = 0; temp < nList.getLength(); temp++) {
-                Node nNode = nList.item(temp);
-                if (nNode.getNodeType() == Node.ELEMENT_NODE) {
-                    Element eElement = (Element) nNode;
+            NodeList recordList = doc.getElementsByTagName("record");
+            for (int i = 0; i < recordList.getLength(); i++) {
+                Node recordNode = recordList.item(i);
+                if (recordNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Element recordElement = (Element) recordNode;
 
-                    // Extract each field
-                    String name = eElement.getElementsByTagName("name").item(0).getTextContent();
-                    String postalZip = eElement.getElementsByTagName("postalZip").item(0).getTextContent();
-                    String region = eElement.getElementsByTagName("region").item(0).getTextContent();
-                    String country = eElement.getElementsByTagName("country").item(0).getTextContent();
-                    String address = eElement.getElementsByTagName("address").item(0).getTextContent();
-                    String list = eElement.getElementsByTagName("list").item(0).getTextContent();
-
-                    // Combine field values into a single string for easy testing
-                    result.add("Name: " + name + ", Postal Zip: " + postalZip + ", Region: " + region +
-                               ", Country: " + country + ", Address: " + address + ", List: " + list);
+                    StringBuilder recordBuilder = new StringBuilder();
+                    for (String field : selectedFields) {
+                        NodeList fieldList = recordElement.getElementsByTagName(field);
+                        if (fieldList.getLength() > 0) {
+                            String fieldValue = fieldList.item(0).getTextContent();
+                            recordBuilder.append(field).append(": ").append(fieldValue).append(", ");
+                        }
+                    }
+                    // Remove trailing comma and space
+                    if (recordBuilder.length() > 0) {
+                        recordBuilder.deleteCharAt(recordBuilder.length() - 2);
+                        result.add(recordBuilder.toString());
+                    }
                 }
             }
         } catch (Exception e) {
@@ -47,17 +51,30 @@ public class App {
         return result;
     }
 
-    // Method to parse the XML file and print the values
-    public void parseXmlFileAndPrint(String filePath) {
-        List<String> values = parseXmlFile(filePath);
-        for (String value : values) {
-            System.out.println(value);
+    public void parseXmlFileAndWriteToFile(String xmlFilePath, String outputFilePath, List<String> selectedFields) {
+        List<String> values = parseXmlFile(xmlFilePath, selectedFields);
+        try (FileWriter writer = new FileWriter(outputFilePath)) {
+            for (String value : values) {
+                writer.write(value + System.lineSeparator());
+            }
+            System.out.println("Data successfully written to " + outputFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
-
+    
     public static void main(String[] args) {
         App app = new App();
-        app.parseXmlFileAndPrint("src/main/resources/data.xml");
-                          
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Enter comma-separated fields you want to include (e.g., name, country): ");
+        String fieldsInput = scanner.nextLine();
+        List<String> selectedFields = List.of(fieldsInput.split("\\s*,\\s*"));
+
+        String xmlFilePath = "src/main/resources/data.xml";
+        String outputFilePath = "src/main/resources/output.txt";
+        app.parseXmlFileAndWriteToFile(xmlFilePath, outputFilePath, selectedFields);
+
+        scanner.close();
     }
 }
