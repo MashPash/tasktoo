@@ -7,8 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,9 +24,6 @@ public class AppTest {
         // Verify the JsonArray is not null and not empty
         assertNotNull(result, "Resulting JsonArray is null");
         assertFalse(result.size() == 0, "Resulting JsonArray is empty");
-
-        // Log the size of the array
-        System.out.println("JsonArray size: " + result.size());
 
         // Verify the contents of the first object
         if (result.size() > 0) {
@@ -61,9 +56,6 @@ public class AppTest {
             JsonArray result = JsonParser.parseReader(reader).getAsJsonArray();
             assertNotNull(result, "Resulting JsonArray is null");
             assertFalse(result.size() == 0, "Resulting JsonArray is empty");
-
-            // Log the size of the array
-            System.out.println("JsonArray size: " + result.size());
 
             if (result.size() > 0) {
                 JsonObject firstObject = result.get(0).getAsJsonObject();
